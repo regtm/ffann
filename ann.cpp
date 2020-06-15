@@ -14,35 +14,35 @@ struct Settings{
 class Network{
     private:
         Settings settings;
-        std::function<float(float)> activation_function;
+        std::function<double(double)> activation_function;
 
     public:
-        Network(Settings settings, std::function<float(float)>);
-        std::vector<float> evaluate(std::vector<float> inputs);
+        Network(Settings settings, std::function<double(double)>);
+        std::vector<double> evaluate(std::vector<double> inputs);
 
     private:
-        std::vector<float> input_neurons;
-        std::vector<float> hidden_neurons;
-        std::vector<float> output_neurons;
+        std::vector<double> input_neurons;
+        std::vector<double> hidden_neurons;
+        std::vector<double> output_neurons;
 
         int total_number_of_input_weights;
         int total_number_of_hidden_weights;
 
-        std::vector<float> input_weights;
-        std::vector<float> hidden_weights;
+        std::vector<double> input_weights;
+        std::vector<double> hidden_weights;
 
     private:
         void init_network();
         void init_weights();
     
     public:
-        std::vector<float> get_input_weights();
-        std::vector<float> get_hidden_weights();
-        void set_input_weights(std::vector<float> input_weights);
-        void set_hidden_weights(std::vector<float> hidden_weights);
+        std::vector<double> get_input_weights();
+        std::vector<double> get_hidden_weights();
+        void set_input_weights(std::vector<double> input_weights);
+        void set_hidden_weights(std::vector<double> hidden_weights);
 };
 
-Network::Network(Settings settings, std::function<float(float)> activation_function)
+Network::Network(Settings settings, std::function<double(double)> activation_function)
 {
     settings = settings;
 
@@ -56,12 +56,12 @@ void Network::init_network()
 {
 
     /* Initialize vectors with bias*/
-    input_neurons = std::vector<float>(settings.number_of_inputs+1);
-    hidden_neurons = std::vector<float>(settings.number_of_hidden_neurons+1, 0.0);
-    output_neurons = std::vector<float>(settings.number_of_outputs+1, 0.0);
+    input_neurons = std::vector<double>(settings.number_of_inputs+1);
+    hidden_neurons = std::vector<double>(settings.number_of_hidden_neurons+1, 0.0);
+    output_neurons = std::vector<double>(settings.number_of_outputs+1, 0.0);
 
-    input_weights = std::vector<float>(total_number_of_input_weights);
-    hidden_weights = std::vector<float>(total_number_of_hidden_weights);
+    input_weights = std::vector<double>(total_number_of_input_weights);
+    hidden_weights = std::vector<double>(total_number_of_hidden_weights);
 
     /* bias value */
     input_neurons.back() = -1.0;
@@ -85,9 +85,9 @@ void Network::init_weights()
     }
 }
 
-std::vector<float> Network::evaluate(std::vector<float> inputs)
+std::vector<double> Network::evaluate(std::vector<double> inputs)
 {
-    std::memcpy(input_neurons.data(), inputs.data(), inputs.size() * sizeof(float));
+    std::memcpy(input_neurons.data(), inputs.data(), inputs.size() * sizeof(double));
 
     /* sum input layer */
     for(int hidden=0; hidden < settings.number_of_hidden_neurons; hidden++){
@@ -118,18 +118,18 @@ std::vector<float> Network::evaluate(std::vector<float> inputs)
     return output_neurons;
 }
 
-std::vector<float> Network::get_input_weights(){
+std::vector<double> Network::get_input_weights(){
     return input_weights;
 }
 
-std::vector<float> Network::get_hidden_weights(){
+std::vector<double> Network::get_hidden_weights(){
     return hidden_weights;
 }
 
-void Network::set_input_weights(std::vector<float> input_weights){
+void Network::set_input_weights(std::vector<double> input_weights){
     input_weights = input_weights;
 }
 
-void Network::set_hidden_weights(std::vector<float> hidden_weights){
+void Network::set_hidden_weights(std::vector<double> hidden_weights){
     hidden_weights = hidden_weights;
 }
