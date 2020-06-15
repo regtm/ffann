@@ -9,7 +9,7 @@ struct Settings{
     int number_of_inputs;
     int number_of_hidden_neurons;
     int number_of_outputs;
-}settings;
+};
 
 class Network{
     private:
@@ -31,7 +31,7 @@ class Network{
         std::vector<double> input_weights;
         std::vector<double> hidden_weights;
 
-    private:
+    public:
         void init_network();
         void init_weights();
     
@@ -44,11 +44,11 @@ class Network{
 
 Network::Network(Settings settings, std::function<double(double)> activation_function)
 {
-    settings = settings;
+    this->settings = settings;
 
-    activation_function = activation_function;
+    this->activation_function = activation_function;
 
-    total_number_of_input_weights = (settings.number_of_inputs+1) * (settings.number_of_hidden_neurons+1);
+    total_number_of_input_weights = (settings.number_of_inputs+1) * (settings.number_of_hidden_neurons);
     total_number_of_hidden_weights = (settings.number_of_hidden_neurons+1) * (settings.number_of_outputs);
 }
 
@@ -58,10 +58,10 @@ void Network::init_network()
     /* Initialize vectors with bias*/
     input_neurons = std::vector<double>(settings.number_of_inputs+1);
     hidden_neurons = std::vector<double>(settings.number_of_hidden_neurons+1, 0.0);
-    output_neurons = std::vector<double>(settings.number_of_outputs+1, 0.0);
+    output_neurons = std::vector<double>(settings.number_of_outputs, 0.0);
 
-    input_weights = std::vector<double>(total_number_of_input_weights);
-    hidden_weights = std::vector<double>(total_number_of_hidden_weights);
+    input_weights = std::vector<double>(total_number_of_input_weights, 0.0);
+    hidden_weights = std::vector<double>(total_number_of_hidden_weights, 0.0);
 
     /* bias value */
     input_neurons.back() = -1.0;
@@ -87,12 +87,13 @@ void Network::init_weights()
 
 std::vector<double> Network::evaluate(std::vector<double> inputs)
 {
+    // overwrite all but the bias input
     std::memcpy(input_neurons.data(), inputs.data(), inputs.size() * sizeof(double));
 
     /* sum input layer */
     for(int hidden=0; hidden < settings.number_of_hidden_neurons; hidden++){
         // include bias
-        for(int input=0; input < settings.number_of_inputs + 1; input++){ 
+        for(int input=0; input < (settings.number_of_inputs + 1); input++){ 
 
             int weight = hidden * (settings.number_of_inputs+1) + input;
             hidden_neurons[hidden] += input_neurons[input] * input_weights[weight];
@@ -105,7 +106,7 @@ std::vector<double> Network::evaluate(std::vector<double> inputs)
     /* sum hidden layer */
     for(int output=0; output < settings.number_of_outputs; output++){
         //include bias
-        for(int hidden=0; hidden < settings.number_of_hidden_neurons + 1; output++){
+        for(int hidden=0; hidden < (settings.number_of_hidden_neurons + 1); hidden++){
             
             int weight = output * (settings.number_of_hidden_neurons + 1) + hidden;
             output_neurons[output] += hidden_neurons[hidden] * hidden_weights[weight];
