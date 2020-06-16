@@ -5,19 +5,20 @@
 #include <functional>
 #include <cstring>
 
-struct Settings{
+struct Ann_settings{
     int number_of_inputs;
     int number_of_hidden_neurons;
     int number_of_outputs;
+    double initial_weight_range;
 };
 
 class Network{
     private:
-        Settings settings;
+        Ann_settings ann_settings;
         std::function<double(double)> activation_function;
 
     public:
-        Network(Settings settings, std::function<double(double)>);
+        Network(Ann_settings settings, std::function<double(double)>);
         std::vector<double> evaluate(std::vector<double> inputs);
 
     private:
@@ -42,9 +43,9 @@ class Network{
         void set_hidden_weights(std::vector<double> hidden_weights);
 };
 
-Network::Network(Settings settings, std::function<double(double)> activation_function)
+Network::Network(Ann_settings settings, std::function<double(double)> activation_function)
 {
-    this->settings = settings;
+    this->ann_settings = settings;
 
     this->activation_function = activation_function;
 
@@ -56,9 +57,9 @@ void Network::init_network()
 {
 
     /* Initialize vectors with bias*/
-    input_neurons = std::vector<double>(settings.number_of_inputs+1);
-    hidden_neurons = std::vector<double>(settings.number_of_hidden_neurons+1, 0.0);
-    output_neurons = std::vector<double>(settings.number_of_outputs, 0.0);
+    input_neurons = std::vector<double>(ann_settings.number_of_inputs+1);
+    hidden_neurons = std::vector<double>(ann_settings.number_of_hidden_neurons+1, 0.0);
+    output_neurons = std::vector<double>(ann_settings.number_of_outputs, 0.0);
 
     input_weights = std::vector<double>(total_number_of_input_weights, 0.0);
     hidden_weights = std::vector<double>(total_number_of_hidden_weights, 0.0);
@@ -73,7 +74,7 @@ void Network::init_weights()
     //copied form cpp reference no idea how it realy works
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis(-5.0, 5.0);
+    std::uniform_real_distribution<> dis(-ann_settings.initial_weight_range, ann_settings.initial_weight_range);
 
     /* Set random weights */
     for(int i=0; i<total_number_of_input_weights; i++){
@@ -91,11 +92,11 @@ std::vector<double> Network::evaluate(std::vector<double> inputs)
     std::memcpy(input_neurons.data(), inputs.data(), inputs.size() * sizeof(double));
 
     /* sum input layer */
-    for(int hidden=0; hidden < settings.number_of_hidden_neurons; hidden++){
+    for(int hidden=0; hidden < ann_settings.number_of_hidden_neurons; hidden++){
         // include bias
-        for(int input=0; input < (settings.number_of_inputs + 1); input++){ 
+        for(int input=0; input < (ann_settings.number_of_inputs + 1); input++){ 
 
-            int weight = hidden * (settings.number_of_inputs+1) + input;
+            int weight = hidden * (ann_settings.number_of_inputs+1) + input;
             hidden_neurons[hidden] += input_neurons[input] * input_weights[weight];
         }
 
@@ -104,11 +105,11 @@ std::vector<double> Network::evaluate(std::vector<double> inputs)
     }
 
     /* sum hidden layer */
-    for(int output=0; output < settings.number_of_outputs; output++){
+    for(int output=0; output < ann_settings.number_of_outputs; output++){
         //include bias
-        for(int hidden=0; hidden < (settings.number_of_hidden_neurons + 1); hidden++){
+        for(int hidden=0; hidden < (ann_settings.number_of_hidden_neurons + 1); hidden++){
             
-            int weight = output * (settings.number_of_hidden_neurons + 1) + hidden;
+            int weight = output * (ann_settings.number_of_hidden_neurons + 1) + hidden;
             output_neurons[output] += hidden_neurons[hidden] * hidden_weights[weight];
         }
     
@@ -128,9 +129,9 @@ std::vector<double> Network::get_hidden_weights(){
 }
 
 void Network::set_input_weights(std::vector<double> input_weights){
-    input_weights = input_weights;
+    this->input_weights = input_weights;
 }
 
 void Network::set_hidden_weights(std::vector<double> hidden_weights){
-    hidden_weights = hidden_weights;
+    this->hidden_weights = hidden_weights;
 }
