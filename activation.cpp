@@ -1,8 +1,11 @@
-/* Activation functions */
-
 #include <cmath>
+#include "activation.hpp"
 
-static double Sigmoid(double value){
+double Tanh(double value){
 
     return 2.0 / (1.0 + std::exp( -2 * value)) -1.0;
+}
+
+double Sigmoid(double value){
+    return 1.0 / (1.0 + std::exp(-value));
 }

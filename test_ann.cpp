@@ -24,10 +24,10 @@ int main(){
     input3.push_back(1.0);
 
     std::vector<double> input4;
-    input4.push_back(1.0);
+    input4.push_back(0.0);
     input4.push_back(0.0);
 
-    Network net = Network(ann_settings, Sigmoid);
+    Network net = Network(ann_settings, Tanh);
 
     net.init_network();
 

@@ -1,64 +1,11 @@
-#include <functional>
-#include <vector>
 #include <cstring>
 #include <random>
-#include "ann.cpp"
-#include "activation.cpp"
 #include <algorithm>
 #include <iostream>
-
-static double x_o_r(double a, double b){
-    if(a >= 1.0 && b < 1.0 || a < 1.0 && b >= 1.0){
-        return 1.0;
-    }else{
-        return 0.0;
-    }
-}
-
-struct Ea_settings{
-    int number_of_individuals;
-    int number_of_epochs;
-    int number_of_recombined;
-    double mutation_range;
-    double mutation_propability;
-    double stop_at_fitness;
-};
-
-struct Genome{
-    double fitness;
-    std::vector<double> input_weights;
-    std::vector<double> hidden_weights;
-};
-
-class Evolution{
-    private:
-        std::function<double(double)> activation_function;
-
-        Ea_settings ea_settings;
-        Ann_settings ann_settings;
-
-        std::vector<Genome> population;
-
-        double best_fitness;
-
-        Genome mutate_input_weights(Genome g);
-        Genome mutate_hidden_weights(Genome g);
-        Genome recombine_input_weights(Genome g1, Genome g2);
-        Genome recombine_hidden_weights(Genome g1, Genome g2);
-        double fitness(std::vector<double> ann_input);
-
-    public:
-        void eval();
-
-        Evolution(
-            Ea_settings ea_settings,
-            Ann_settings ann_settings,
-            std::function<double(double)> activation_function
-            );
-
-
-
-};
+#include "ea.hpp"
+#include "fitness.hpp"
+#include "activation.hpp"
+#include "ann.hpp"
 
 Genome Evolution::mutate_input_weights(Genome g){
     int len = g.input_weights.size();
@@ -69,7 +16,7 @@ Genome Evolution::mutate_input_weights(Genome g){
     std::uniform_real_distribution<> double_dis(-ea_settings.mutation_range, ea_settings.mutation_range);
 
     for(int i = 0; i < len; i++){
-        if((double) int_dis(gen) < (double) len * ea_settings.mutation_propability){
+        if((double) int_dis(gen) < (double) len * ea_settings.mutation_probability){
             g.input_weights[i] += double_dis(gen);
         }
     }
@@ -86,7 +33,7 @@ Genome Evolution::mutate_hidden_weights(Genome g){
     std::uniform_real_distribution<> double_dis(-ea_settings.mutation_range, ea_settings.mutation_range);
 
     for(int i = 0; i < len; i++){
-        if((double) int_dis(gen) < (double) len * ea_settings.mutation_propability){
+        if((double) int_dis(gen) < (double) len * ea_settings.mutation_probability){
             g.hidden_weights[i] += double_dis(gen);
         }
     }
@@ -114,22 +61,22 @@ Genome Evolution::recombine_hidden_weights(Genome g1, Genome g2){
 Evolution::Evolution(
     Ea_settings ea_settings,
     Ann_settings ann_settings,
-    std::function<double(double)> activation_function
+    std::function<double(Network, std::vector<data_point>)> fitness_function
     ){
         this->best_fitness = 0.0;
+        this->fitness_function = fitness_function;
         this->ea_settings = ea_settings;
 
         this->ann_settings = ann_settings;
-        this->activation_function = activation_function;
 
         //setup population
         this->population.resize(ea_settings.number_of_individuals);
 }
 
-void Evolution::eval(){
+std::tuple<Network, Genome> Evolution::eval(std::vector<data_point> set){
     
     /* Setup ANN */
-    Network net = Network(ann_settings, Sigmoid);
+    Network net = Network(ann_settings);
 
     net.init_network();
 
@@ -147,9 +94,12 @@ void Evolution::eval(){
     while(best_fitness < ea_settings.stop_at_fitness && epoch < ea_settings.number_of_epochs){
         
         // Sort by fitness
-        std::sort(population.begin(), population.end(), [](Genome g1, Genome g2){
+        std::sort(this->population.begin(), this->population.end(), [](Genome g1, Genome g2){
             return g1.fitness > g2.fitness;
-        });
+            }
+        );
+
+        std::cout << "Epoch: " << epoch << std::endl;
 
         // Recombine
         std::vector<Genome> new_population(this->population.size());
@@ -175,55 +125,34 @@ void Evolution::eval(){
             net.set_hidden_weights(this->population[i].hidden_weights);
 
             //calc fitness
-            double sum = 0.0;
-            for(int i=0; i<=1;i++){
-                for(int j=0; j<=1; j++){
-                std::vector<double> tmp_input {(double) i, (double) j};
-//                std::cout << "Net: " << net.evaluate(tmp)[0] << "\n";
-                double net_ouput = net.evaluate(tmp_input)[0];
-                sum += 1.0 - std::abs(x_o_r((double) i, (double) j)- net_ouput);
-                }
-            }
-            sum = sum * 0.25;
+            double fitness_val = this->fitness_function(net, set);
 
-//            std::cout << "Fitness: " << sum << "\n";
-            if(sum > best_fitness){
-                best_fitness = sum;
-                std::cout << "Best: " << sum << "\n";
-                std::cout << "Inputw: ";
+            // std::cout << "Fitness: " << fitness_val << "\n";
+            if(fitness_val > best_fitness){
+                best_fitness = fitness_val;
+                std::cout << "Best fitness: " << fitness_val;
+                std::cout << " Inputw: ";
                 for(auto e: this->population[i].input_weights){
                     std::cout << e << " ";
                 }
-                std::cout << "Hiddenw: ";
+                std::cout << " Hiddenw: ";
                 for(auto e: this->population[i].hidden_weights){
                     std::cout << e << " ";
                 }
-                std::cout << "\n";
+                std::cout << std::endl;
             }
-            this->population[i].fitness = sum;
+            this->population[i].fitness = fitness_val;
         }
     
         epoch++;
     }
 
-    // get plot data
-    std::cout << "Plot data \n";
-    for(double x=0.0; x<=1.0; x+=0.1){
-        for(double y=0.0; y<=1.0; y+=0.1){
-            std::vector<double> in{x,y};
-            std::cout << x << " " << y << " " << net.evaluate(in)[0] << "\n"; 
+    // Sort by fitness a final time to return the best individual
+        std::sort(this->population.begin(), this->population.end(), [](Genome g1, Genome g2){
+        return g1.fitness > g2.fitness;
         }
-        
-    }
+    );
 
-}
+    return std::tuple<Network, Genome>(net, this->population[0]);
 
-int main(){
-    Ea_settings ea_settings {2000, 2000, 10, 2.0, 0.2, 0.99};
-
-    Ann_settings ann_settings {2, 2, 1, 2.0};
-
-    Evolution evo = Evolution(ea_settings, ann_settings, Sigmoid);
-
-    evo.eval();
 }

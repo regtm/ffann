@@ -1,53 +1,13 @@
 /* Fully connected feedforward network*/
 
-#include <vector>
 #include <random>
-#include <functional>
 #include <cstring>
+#include "ann.hpp"
+#include "activation.hpp"
 
-struct Ann_settings{
-    int number_of_inputs;
-    int number_of_hidden_neurons;
-    int number_of_outputs;
-    double initial_weight_range;
-};
-
-class Network{
-    private:
-        Ann_settings ann_settings;
-        std::function<double(double)> activation_function;
-
-    public:
-        Network(Ann_settings settings, std::function<double(double)>);
-        std::vector<double> evaluate(std::vector<double> inputs);
-
-    private:
-        std::vector<double> input_neurons;
-        std::vector<double> hidden_neurons;
-        std::vector<double> output_neurons;
-
-        int total_number_of_input_weights;
-        int total_number_of_hidden_weights;
-
-        std::vector<double> input_weights;
-        std::vector<double> hidden_weights;
-
-    public:
-        void init_network();
-        void init_weights();
-    
-    public:
-        std::vector<double> get_input_weights();
-        std::vector<double> get_hidden_weights();
-        void set_input_weights(std::vector<double> input_weights);
-        void set_hidden_weights(std::vector<double> hidden_weights);
-};
-
-Network::Network(Ann_settings settings, std::function<double(double)> activation_function)
+Network::Network(Ann_settings settings)
 {
     this->ann_settings = settings;
-
-    this->activation_function = activation_function;
 
     total_number_of_input_weights = (settings.number_of_inputs+1) * (settings.number_of_hidden_neurons);
     total_number_of_hidden_weights = (settings.number_of_hidden_neurons+1) * (settings.number_of_outputs);
@@ -71,7 +31,7 @@ void Network::init_network()
 
 void Network::init_weights()
 {
-    //copied form cpp reference no idea how it realy works
+    //copied from cpp reference no idea how it realy works
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis(-ann_settings.initial_weight_range, ann_settings.initial_weight_range);
@@ -101,7 +61,7 @@ std::vector<double> Network::evaluate(std::vector<double> inputs)
         }
 
         /* Activate */
-        hidden_neurons[hidden] = activation_function(hidden_neurons[hidden]);
+        hidden_neurons[hidden] = this->ann_settings.activation_function(hidden_neurons[hidden]);
     }
 
     /* sum hidden layer */
@@ -114,10 +74,16 @@ std::vector<double> Network::evaluate(std::vector<double> inputs)
         }
     
         /* Activate */
-        output_neurons[output] = activation_function(output_neurons[output]);
+        output_neurons[output] = this->ann_settings.activation_function(output_neurons[output]);
     }
 
-    return output_neurons;
+    /* Allow networks without hidden layer */
+    if( ann_settings.number_of_outputs > 0){
+        return output_neurons;
+    } else {
+        return hidden_neurons;
+    }
+    
 }
 
 std::vector<double> Network::get_input_weights(){
